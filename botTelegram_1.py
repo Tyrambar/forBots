@@ -4,7 +4,7 @@ import re
 import logging
 from datetime import datetime
 from default_texts import *
-from examples_events import *
+
 
 TG_URL = 'https://telegg.ru/orig/bot'
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -68,47 +68,50 @@ class Event:
     def __repr__(self):
         return self.name + '__class_Event'
 
-#ex_evs_objs = [make_date(1, 1, 1, 1) for _ in range(3)]
+		
+# Creating arrays for events
 ex_evs_objs = {}
 evs = {}
-for i in range(3):
+# Adding examples_events into these arrays
+for i in range(len(e)):
     ex_evs_objs[e[i]] = Event(e[i], e_adress[i], e_dates[e[i]], events_d[e[i]], 203292486)
 evs = ex_evs_objs.copy()
-print(evs)
-#argss_ind[ind_id] = {'numb_see_my_e': pp, 'deep': deep, 'previous': prev, 'see_my_e_lst': see_my_e_lst}
 
-#us = User(12345, 3, 2, 'some', ['aha', 'huh'])
-#print(12345 in User.users, us.users[12345], User.users[12345].numb_see_my_e)
 
 # Helping funcs
 def make_date(month, date, hour, min = 0):
     return datetime(2019, month, date, hour, min)
 
-def m_send(up, co, txt, keyboard = None,):
+def m_send(up, co, txt, keyboard = None):
     return co.bot.send_message(chat_id=up.message.chat_id, text=txt, reply_markup=keyboard)
 
-def make_menu(user_arg, buttons = [], n_cols=1, footer_buttons = [to_begin], seeing_my_e = 0, while_edit = 0):
+def make_menu(user_arg, buttons = [], n_cols=1):
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     pre_footer_buttons = [see_my_e]
-    print(footer_buttons, Event.confirmed_all)
-    if not while_edit:
+    footer_buttons = [to_begin]
+    if user_arg not in users:
+        users[user_arg] = Arg(0, 0, '', [])
+
+    if not user_arg in Event.confirmed_all:
+        pre_footer_buttons.remove(see_my_e)
+    if users[user_arg].deep < 10:
         if user_arg in Event.confirmed_all:
-            if seeing_my_e:
+            if user[user_arg].deep == 3:
                 pre_footer_buttons.remove(see_my_e)
-        if see_my_e in footer_buttons and not user_arg in Event.confirmed_all:
-            pre_footer_buttons.remove(see_my_e)
         if user_arg in Event.host_all:
             pre_footer_buttons.append(show_org)
     if pre_footer_buttons:
         menu.append(pre_footer_buttons)
-    if footer_buttons:
+    if main not in buttons:
         menu.append(footer_buttons)
 
-    return ReplyKeyboardMarkup(menu, resize_keyboard = True, one_time_keyboard = True)
+    return ReplyKeyboardMarkup(menu, resize_keyboard = True,
+                               one_time_keyboard = True)
 
 def check_input_number(input_n_event, lst):
     if len(input_n_event) > 1:
-        if re.match(r"\d", input_n_event[1]) and int(input_n_event[:2]) <= len(lst) - 1:
+        if re.match(r"\d", input_n_event[1]) and \
+                int(input_n_event[:2]) <= len(lst) - 1:
             return int(input_n_event[:2])
         elif int(input_n_event[0]) <= len(lst) - 1:
             return int(input_n_event[0])
@@ -129,16 +132,14 @@ def format_event_repr(update, event):
 
 
 # Main with data
-ac_token = '909606708:AAENJ02T_jOjbShWb5ETckHDKHekV6X58QM'
+ac_token = ''
 updater = Updater(token= ac_token, base_url = TG_URL, use_context= True)
 dispatcher = updater.dispatcher
 
-
+# Creating array for every users of bot and array for args for create/edit events
 users = {}
 args_4_create = {}
-password = 'праотцы'
-pass_determine = 'кара'
-pass_edit = 'правка'
+
 
 # Additional funcs-handlers
 def welc_ans(update, context):
@@ -148,19 +149,15 @@ def how_a_u(update, context):
     m_send(update, context, mes_a_che_tam)
 
 def wrong_ans(update, context):
-    print(update.message.text)
     m_send(update, context, wrong)
 
 
-# argss_ind[ind_id] = {'numb_see_my_e': pp, 'deep': deep, 'previous': prev, 'see_my_e_lst': see_my_e_lst}
 # Main funcs-handlers
 def start(update, context):
     global users
-    menu = make_menu(update.message.chat_id, buttons = [main], footer_buttons = [])
+    menu = make_menu(update.message.chat_id, buttons = [main])
     m_send(update, context, hi_from_bot, menu)
     users[update.message.chat_id] = Arg(0, 0, '', [])
-
-    print(update.effective_user.username)
 
 def step_1(update, context):
     global users
@@ -170,20 +167,18 @@ def step_1(update, context):
         users[update.message.chat_id] = Arg(0, 0, '', [])
     if users[update.message.chat_id].change == 1:
         text = choose_edit_e
-    print(Event.evs_names)
     for kk, i in enumerate(Event.evs_names):
         text += f"{kk+1}. {i}\n"
     m_send(update, context, text, menu)
     if not users[update.message.chat_id].change:
         users[update.message.chat_id].deep = 1
 
+		
 # Most popular function-handler for processing events, depending from what do you want
 def step_work_with_e(update, context):
     global users, evs
     if update.message.chat_id not in users:
         users[update.message.chat_id] = Arg(0, 0, '', [])
-    print('in step_in_e')
-    print(users[update.message.chat_id].see_my_e_lst)
     # Function-handler for see some event
     def step_e(numb = None):
         global users, evs
@@ -221,6 +216,7 @@ def step_work_with_e(update, context):
             users[update.message.chat_id].numb_see_my_e = 0
         users[update.message.chat_id].see_my_e_lst = []
         users[update.message.chat_id].deep = 2
+		
     # Function-handler for confirm to event
     def step_confirm():
         global users, evs
@@ -232,9 +228,7 @@ def step_work_with_e(update, context):
             context.bot.send_message(
                 chat_id=evs[users[update.message.chat_id].previous].host_id,
                 text=f'Пользователь @{update.effective_user.username} записался на Ваше мероприятие')
-            print(evs[users[update.message.chat_id].previous])
             evs[users[update.message.chat_id].previous].nicknames.append(f'@{update.effective_user.username}')
-            print(evs[users[update.message.chat_id].previous].nicknames)
 
     # Function-handler for cancel confirm to event
     def step_canc():
@@ -258,7 +252,6 @@ def step_work_with_e(update, context):
             return step_e()
         elif users[update.message.chat_id].numb_see_my_e:
             numb_for_see_my = check_input_number(update.message.text, users[update.message.chat_id].see_my_e_lst)
-            print(users[update.message.chat_id].numb_see_my_e, [j for j in range(1,users[update.message.chat_id].numb_see_my_e+1)], numb_for_see_my)
             return step_e(numb_for_see_my) if numb_for_see_my else wrong_ans(update, context)
         elif users[update.message.chat_id].deep == 1 and check_input_number(update.message.text, Event.evs_names):
             return step_e(check_input_number(update.message.text, Event.evs_names))
@@ -276,6 +269,7 @@ def step_work_with_e(update, context):
     else:
         return wrong_ans(update, context)
 
+		
 # Seeing yours confirmed
 def see_my_e_f(update, context):
     global users, evs
@@ -288,8 +282,7 @@ def see_my_e_f(update, context):
             users[update.message.chat_id].see_my_e_lst.append(i)
             see_my += f"{users[update.message.chat_id].numb_see_my_e+1}. {i} по адресу {evs[i].address}\n"
             users[update.message.chat_id].numb_see_my_e += 1
-    print(users[update.message.chat_id].see_my_e_lst, users[update.message.chat_id].numb_see_my_e)
-    menu = make_menu(update.message.chat_id, users[update.message.chat_id].see_my_e_lst, seeing_my_e=1)
+    menu = make_menu(update.message.chat_id, users[update.message.chat_id].see_my_e_lst)
     m_send(update, context, see_my, menu)
     users[update.message.chat_id].deep = 3
 
@@ -298,18 +291,18 @@ def see_my_e_f(update, context):
 def begin_create_e_f(update, context):
     global users
     users[update.message.chat_id] = Arg(0, 0, '', [])
-    menu = make_menu(update.message.chat_id, buttons= [button_opt[0]], while_edit = 1)
+    users[update.message.chat_id].deep = 10
+    menu = make_menu(update.message.chat_id, buttons= [button_opt[0]])
     m_send(update, context, options, menu)
 
 def to_create_e_f(update, context):
     global users
-    users[update.message.chat_id].deep = 10
-    menu = make_menu(update.message.chat_id, while_edit = 1)
+    menu = make_menu(update.message.chat_id)
     m_send(update, context, options_str[1], menu)
 
 def creating_e_f(update, context):
     global users, args_4_create, evs
-    menu = make_menu(update.message.chat_id, while_edit=1)
+    menu = make_menu(update.message.chat_id)
 
     if users[update.message.chat_id].deep == 10:
         args_4_create['name'] = update.message.text
@@ -334,7 +327,7 @@ def creating_e_f(update, context):
     elif users[update.message.chat_id].deep == 13:
         args_4_create['description'] = update.message.text
         users[update.message.chat_id].deep = 14
-        menu = make_menu(update.message.chat_id, buttons = [button_opt[1]], while_edit=1)
+        menu = make_menu(update.message.chat_id, buttons = [button_opt[1]])
         m_send(update, context, options_almost, menu)
     elif users[update.message.chat_id].deep == 14 and update.message.text == button_opt[1]:
         new_ev_obj = Event(args_4_create['name'], args_4_create['address'],
@@ -353,7 +346,7 @@ def to_to_edit_e_f(update, context):
 
 def edit_e_f(update, context):
     global users, args_4_create, evs
-    menu = make_menu(update.message.chat_id, buttons=[button_opt_edit[0]], while_edit=1)
+    menu = make_menu(update.message.chat_id, buttons=[button_opt_edit[0]])
     if users[update.message.chat_id].change == 1:
         users[update.message.chat_id].deep = 20
         users[update.message.chat_id].change = 0
@@ -377,7 +370,6 @@ def edit_e_f(update, context):
         Event.evs_names.insert(curr_index, args_4_create['name'])
         users[update.message.chat_id].deep = 21
         text = options_str[2] + old_option + evs[args_4_create['name']].address
-        print(evs)
         m_send(update, context, text, menu)
     elif users[update.message.chat_id].deep == 21:
         if update.message.text != button_opt_edit[0]:
@@ -412,7 +404,7 @@ def edit_e_f(update, context):
         else:
             args_4_create['description'] = evs[args_4_create['name']].description
         users[update.message.chat_id].deep = 24
-        menu = make_menu(update.message.chat_id, buttons=[button_opt_edit[1]], while_edit=1)
+        menu = make_menu(update.message.chat_id, buttons=[button_opt_edit[1]])
         m_send(update, context, options_almost, menu)
     elif users[update.message.chat_id].deep == 24 and update.message.text == button_opt_edit[1]:
         evs[args_4_create['name']].address = args_4_create['address']
@@ -421,7 +413,7 @@ def edit_e_f(update, context):
             evs[args_4_create['name']].correct_order_ev()
         evs[args_4_create['name']].description = args_4_create['description']
         users[update.message.chat_id] = Arg(0, 0, '', [])
-        menu = make_menu(update.message.chat_id, while_edit=1)
+        menu = make_menu(update.message.chat_id)
         m_send(update, context, options_edit_succ, menu)
 
 
@@ -436,7 +428,7 @@ def succ_destroy_e_f(update, context):
     users[update.message.chat_id].change = 0
     evs.pop(update.message.text)
     Event.evs_names.remove(update.message.text)
-    menu = make_menu(update.message.chat_id, while_edit=1)
+    menu = make_menu(update.message.chat_id)
     m_send(update, context, destroy_succ, menu)
 
 def see_my_host(update, context):
@@ -444,7 +436,6 @@ def see_my_host(update, context):
     text = ''
     for i in evs:
         if update.message.chat_id == evs[i].host_id:
-            print(evs[i].nicknames)
             text += "На ваше мероприятие`" + i + "`записались:\n" + '\n@'.join(evs[i].nicknames) + '\n'
     m_send(update, context, text)
 
@@ -459,7 +450,7 @@ class F_step_e(BaseFilter):
         for j in (main, see_my_e, show_org, button_opt[0]):
             if j in message.text:
                 return False
-        for i in (password, pass_determine, pass_edit):
+        for i in (pass_create, pass_determine, pass_edit):
             if i in message.text.lower():
                 return False
         if re.match(begin, message.text.lower()):
@@ -476,17 +467,14 @@ class F_to_create_e(BaseFilter):
 
 class F_to_to_create_e(BaseFilter):
     def filter(self, message):
-        print(password in message.text.lower())
-        return password in message.text.lower()
+        return pass_create in message.text.lower()
 
 class F_to_destroy_e(BaseFilter):
     def filter(self, message):
-        print(pass_determine in message.text.lower())
         return pass_determine in message.text.lower()
 
 class F_to_to_edit_e(BaseFilter):
     def filter(self, message):
-        print(pass_edit in message.text.lower())
         return pass_edit in message.text.lower()
 
 class F_to_see_my_host(BaseFilter):
@@ -520,7 +508,6 @@ ff_to_see_my_host = F_to_see_my_host()
 
 st_handler = CommandHandler('start', start)
 re_for_start_handler = MessageHandler(ff_re_for_start, start)
-#st_handler2 = MessageHandler(Filters.regex(begin), start)
 
 to_e_handler = MessageHandler(ff_step1, step_1)
 in_e_handler = MessageHandler(ff_step_e, step_work_with_e)
@@ -547,50 +534,3 @@ for i in (
     dispatcher.add_handler(i)
 
 updater.start_polling()
-
-
-"""
-
-
-class Some():
-    instance = None
-
-    def __new__(cls):
-        if cls.instance is None:
-            cls.instance = super().__new__(cls)
-
-        return cls.instance
-
-
-
-def format_event_repr(update, event):
-    date_of_e = event.date
-    text = f'{users[update.message.chat_id].previous}\n' \
-       f'{int(date_of_e.strftime("%d"))} {months[int(date_of_e.strftime("%m"))]}, ' \
-       f'{daysweek[date_of_e.strftime("%A")]}, в {date_of_e.strftime("%H:%M")}\nпо адресу: ' \
-       f'{event.address}\n\n{event.description}'
-    return text
-
-date_of_e = evs[update.message.text].date
-text = f'{users[update.message.chat_id].previous}\n' \
-       f'{int(date_of_e.strftime("%d"))} {months[int(date_of_e.strftime("%m"))]}, ' \
-       f'{daysweek[date_of_e.strftime("%A")]}, в {date_of_e.strftime("%H:%M")}\nпо адресу: ' \
-       f'{evs[update.message.text].address}\n\n' \
-       f'{evs[update.message.text].description}'
-
-date_of_e = evs[users[update.message.chat_id].previous].date
-text = f'{users[update.message.chat_id].previous}\n' \
-       f'{int(date_of_e.strftime("%d"))} {months[int(date_of_e.strftime("%m"))]}, ' \
-       f'{daysweek[date_of_e.strftime("%A")]}, в {date_of_e.strftime("%H:%M")}\nпо адресу: ' \
-       f'{evs[users[update.message.chat_id].previous].address}\n\n' \
-       f'{evs[users[update.message.chat_id].previous].description}'
-
-date_of_e = evs[Event.evs_names[numb-1]].date
-text = f'{users[update.message.chat_id].previous}\n' \
-       f'{int(date_of_e.strftime("%d"))} {months[int(date_of_e.strftime("%m"))]}, ' \
-       f'{daysweek[date_of_e.strftime("%A")]}, в {date_of_e.strftime("%H:%M")}\nпо адресу: ' \
-       f'{evs[Event.evs_names[numb-1]].address}\n\n' \
-       f'{evs[Event.evs_names[numb-1]].description}'
-
-
-"""
