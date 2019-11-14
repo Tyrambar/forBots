@@ -4,12 +4,13 @@ import sys
 from openpyxl import load_workbook
 from PyQt5.QtWidgets import QWidget, QPushButton, QApplication, QLabel, QLineEdit, QMainWindow
 
-lines = ('excel', 'coord_cells', 'files', 'additional', 'file_extension')
+lines = ('excel', 'coord_cells', 'files', 'separator', 'additional', 'file_extension')
 lines_with_label = {lines[n]: lines[n]+'_label' for n in range(len(lines))}
 main_text_line = ('Введите путь до файла Excel, затем до папки, где находятся '
                      'файлы для переименования\nв соответствии с элементами таблицы.'
                      'Файлы должны быть скачены/загружены в том\nпорядке, '
                      'в котором они и делались.')
+forbidden_symbols = ("\\", "/", ":", "*", "?", '"', "<", ">", "|", "+", "%", "!", "@")
 
 texts_line = ("Введите либо полный путь до файла Excel\n" \
                 "либо просто имя файла:",
@@ -17,11 +18,14 @@ texts_line = ("Введите либо полный путь до файла Exc
                 "нужные элементы\nтаблицы и после `;` буквы нужных колонок",
                 "Путь к папке с файлами, " \
                 "(в папке\nдолжны быть только нужные файлы)",
+                "Символ(ы), разделяющий(-ие)\nсодержание колонок",
                 "Дополнительное слово, которое будет\nв конце имени каждого файла, " \
                 "например,\nчек", "Введите расширение файлов, которых\nхотите переименовать")
 error_path_exc = "При вводе пути Excel возникла ошибка - вбейте другой путь до файла"
 error_path_f = "При вводе директории возникла ошибка - вбейте другой путь до директории\nили проверьте расширение файлов"
 error_extension = "Неверный формат расширения файла - проверьте"
+
+error_sep = "Неверный формат разделителя - проверьте"
 
 class Widget(QWidget):
     """	Main class for widget
@@ -69,8 +73,9 @@ class Rename_files:
         letters_cell = [letter.upper() for letter in getattr(self.ui, "coord_cells").displayText().split(';')[1]]
         for f in self.sort_date_list:
             num_cell += 1
-            text = '_'.join([ws[i+str(num_cell)].value.replace('/', 'дробь') for i in letters_cell])
-            text = text + '_' +  getattr(self.ui, 'additional').displayText()
+            separator = getattr(self.ui, "separator").displayText()
+            text = separator.join([ws[i+str(num_cell)].value.replace('/', 'дробь') for i in letters_cell])
+            text = text + separator +  getattr(self.ui, 'additional').displayText()
             if len(getattr(self.ui, 'file_extension').displayText()) < 3:
                 getattr(self.ui, 'file_extension').setText(error_extension)
             else:
@@ -82,6 +87,10 @@ class Rename_files:
         self.path_exc = getattr(self.ui, "excel").displayText().replace('\\', '/')
         if self.path_exc[-5:] != '.xlsx':
             self.path_exc+='.xlsx'
+        has_forbidden_symbols = [i for i in getattr(self.ui, "separator").displayText() if i in forbidden_symbols]
+        if len(getattr(self.ui, "separator").displayText()) > 4 or has_forbidden_symbols:
+            getattr(self.ui, "separator").setText(error_sep)
+            return
         self.path_f = getattr(self.ui, "files").displayText().replace('\\', '/')
         has_error_exc = 1
         for root, dirs, files in os.walk(self.path_exc[:self.path_exc.rfind('/')]):
@@ -99,13 +108,11 @@ class Rename_files:
                         self.rename(ws)
                     else:
                         getattr(self.ui, "files").setText(error_path_f)
-                    break
-            break
+                    return
         if has_error_exc:
             getattr(self.ui, "excel").setText(error_path_exc)
 
 if __name__ == '__main__':
-
     app = QApplication(sys.argv)
     myapp = Rename_files()
     myapp.ui.show()
