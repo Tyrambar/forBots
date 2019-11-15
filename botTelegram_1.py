@@ -72,6 +72,7 @@ class Event:
 # Creating arrays for events
 ex_evs_objs = {}
 evs = {}
+
 # Adding examples_events into these arrays
 for i in range(len(e)):
     ex_evs_objs[e[i]] = Event(e[i], e_adress[i], e_dates[e[i]], events_d[e[i]], 203292486)
@@ -503,7 +504,6 @@ ff_to_to_create_e = F_to_to_create_e()
 ff_to_destroy_e = F_to_destroy_e()
 
 ff_to_see_my_host = F_to_see_my_host()
-
 
 
 st_handler = CommandHandler('start', start)
