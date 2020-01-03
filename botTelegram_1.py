@@ -97,7 +97,7 @@ def make_menu(user_arg, buttons = [], n_cols=1):
         pre_footer_buttons.remove(see_my_e)
     if users[user_arg].deep < 10:
         if user_arg in Event.confirmed_all:
-            if user[user_arg].deep == 3:
+            if users[user_arg].deep == 3:
                 pre_footer_buttons.remove(see_my_e)
         if user_arg in Event.host_all:
             pre_footer_buttons.append(show_org)
