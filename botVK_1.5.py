@@ -97,7 +97,7 @@ def make_menu(id=None, lst=[]):
     keyb = {"one_time": False, "buttons": []}
     c=1
     buttons = lst[:]
-    if users[id].deep != 3 and users[id].deep > 10:
+    if users[id].deep != 3 and users[id].deep < 10:
         if id in Event.confirmed_all:
             buttons.append(see_my_e)
         if id in Event.host_all:
