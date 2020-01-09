@@ -125,7 +125,7 @@ def check_input_number(input_n_event, lst):
         else: return
 
 # Main with data
-ac_token = '909606708:AAFNCRWO4SnXhJiDXvg952GsS7E_RFpsn-A'
+ac_token = ''
 updater = Updater(token= ac_token, base_url = TG_URL, use_context= True)
 dispatcher = updater.dispatcher
 
