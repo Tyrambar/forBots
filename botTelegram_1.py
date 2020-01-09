@@ -1,11 +1,13 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler, RegexHandler, BaseFilter
 from telegram import InlineQueryResultArticle, InputTextMessageContent, KeyboardButton, ReplyKeyboardMarkup
+from default_texts_eng import all_texts as en_texts
+from default_texts import all_texts as ru_texts
+from examples_events_eng import *
 import re
 import logging
 from datetime import datetime
-from default_texts_eng import all_texts as en_texts
-from default_texts import all_texts as ru_texts
-from examples_events import *
+
+from collections import OrderedDict
 
 choose_lang_txt = 'Выберите язык / Choose language'
 languages = ['🇷🇺', '🇬🇧']
@@ -45,7 +47,6 @@ class Arg:
         self.change = 0
 
 class Event:
-    evs_names = []
     confirmed_all = []
     host_all = []
     def __init__(self, name, addr, date, desc, host_id):
@@ -57,22 +58,6 @@ class Event:
         Event.host_all.append(self.host_id)
         self.confirmed = [] # users chat_id
         self.nicknames = [] # users nicknames (@somebody)
-        self.correct_order_ev()
-
-    def correct_order_ev(self):
-        if evs:
-            for i in Event.evs_names:
-                if self.date < evs[i].date:
-                    self.ev_id = Event.evs_names.index(i)
-                    Event.evs_names.insert(self.ev_id, self.name)
-                    break
-            else:
-                Event.evs_names.append(self.name)
-                self.ev_id = len(Event.evs_names)
-            if Event.evs_names.count(self.name) > 1:
-                Event.evs_names.pop(Event.evs_names.index(self.name))
-        else:
-            Event.evs_names.append(self.name)
 
     def __str__(self):
         return self.name
@@ -82,7 +67,11 @@ class Event:
 		
 # Creating arrays for events
 ex_evs_objs = {}
-evs = {}
+evs = OrderedDict({})
+
+def correct_order_ev(evs_arg):
+    if evs_arg:
+        return OrderedDict(sorted(list(evs_arg.items()), key = lambda ev_lst: ev_lst[1].date))
 
 # Adding examples_events into these arrays
 for i in range(len(e)):
@@ -136,7 +125,7 @@ def check_input_number(input_n_event, lst):
         else: return
 
 # Main with data
-ac_token = '909606708:AAHRX9yH5E6C4DP1Q3d7JqSWPY3zuV4FTNU'
+ac_token = '909606708:AAFNCRWO4SnXhJiDXvg952GsS7E_RFpsn-A'
 updater = Updater(token= ac_token, base_url = TG_URL, use_context= True)
 dispatcher = updater.dispatcher
 
@@ -180,14 +169,14 @@ def start(update, context):
 
 def step_1(update, context):
     global users
-    menu = make_menu(update.message.chat_id, Event.evs_names)
+    menu = make_menu(update.message.chat_id, list(evs.keys()))
     text = ''
     if update.message.chat_id not in users:
         choose_lang(update, context)
     else:
         if users[update.message.chat_id].change == 1:
             text = users[update.message.chat_id].lang['choose_edit_e']
-        for kk, i in enumerate(Event.evs_names):
+        for kk, i in enumerate(list(evs.keys())):
             text += f"{kk+1}. {i}\n"
         m_send(update, context, text, menu)
         if not users[update.message.chat_id].change:
@@ -204,7 +193,7 @@ def step_work_with_e(update, context):
     # Function-handler for see some event
     def step_e(numb = None):
         global users, evs
-        if curr in Event.evs_names:
+        if curr in evs:
             users[u_id].previous = curr
             if u_id in evs[curr].confirmed:
                 menu = make_menu(u_id, [users[u_id].lang['cancel']])
@@ -228,13 +217,13 @@ def step_work_with_e(update, context):
                          users[u_id].previous, users[u_id].lang)
                 m_send(update, context, text, menu)
             else:
-                users[u_id].previous = Event.evs_names[numb-1]
-                if u_id in evs[Event.evs_names[numb-1]].confirmed:
+                users[u_id].previous = list(evs.items())[numb-1][0]
+                if u_id in evs[list(evs.items())[numb-1][0]].confirmed:
                     menu = make_menu(u_id)
                 else:
                     menu = make_menu(u_id, [users[u_id].lang['agree']])
                 text = users[u_id].lang['format_event_repr']\
-                            (evs[Event.evs_names[numb-1]],
+                            (evs[list(evs.items())[numb-1][0]],
                             users[u_id].previous, users[u_id].lang)
                 m_send(update, context, text, menu)
         else:
@@ -274,15 +263,15 @@ def step_work_with_e(update, context):
     # Conditions returns needed function
     if users[u_id].change == -1:
         return succ_destroy_e_f(update, context)
-    elif (curr in Event.evs_names or re.match(r"[1-9]\d?", curr[:2]))\
+    elif (curr in evs or re.match(r"[1-9]\d?", curr[:2]))\
             and users[u_id].deep < 10 and users[u_id].change == 0:
-        if curr in Event.evs_names:
+        if curr in evs:
             return step_e()
         elif users[u_id].numb_see_my_e:
             numb_for_see_my = check_input_number(curr, users[u_id].see_my_e_lst)
             return step_e(numb_for_see_my) if numb_for_see_my else wrong_ans(update, context)
-        elif users[u_id].deep == 1 and check_input_number(curr, Event.evs_names):
-            return step_e(check_input_number(curr, Event.evs_names))
+        elif users[u_id].deep == 1 and check_input_number(curr, list(evs.keys())):
+            return step_e(check_input_number(curr, list(evs.keys())))
         else:
             return wrong_ans(update, context)
     elif curr == users[u_id].lang['agree'] or \
@@ -306,7 +295,7 @@ def see_my_e_f(update, context):
         users[update.message.chat_id] = Arg(0, 0, '', [], None)
         return wrong_ans(update, context)
     see_my = users[update.message.chat_id].lang['mes_see']
-    for i in Event.evs_names:
+    for i in evs:
         if update.message.chat_id in evs[i].confirmed:
             users[update.message.chat_id].see_my_e_lst.append(i)
             see_my += users[update.message.chat_id].lang['see_my_e_f_txt']\
@@ -366,6 +355,7 @@ def creating_e_f(update, context):
         new_ev_obj = Event(args_4_create['name'], args_4_create['address'],
                            args_4_create['date'], args_4_create['description'], u_id)
         evs[args_4_create['name']] = new_ev_obj
+        evs = correct_order_ev(evs)
         users[u_id].deep = 0
         m_send(update, context, users[u_id].lang['options_succ'], menu)
 
@@ -401,9 +391,6 @@ def edit_e_f(update, context):
         obj_ev = evs.pop(users[u_id].previous)
         obj_ev.name = args_4_create['name']
         evs[args_4_create['name']] = obj_ev
-        curr_index = Event.evs_names.index(users[u_id].previous)
-        del Event.evs_names[curr_index]
-        Event.evs_names.insert(curr_index, args_4_create['name'])
         users[u_id].deep = 21
         text = users[u_id].lang['options_str'][2] + users[u_id].lang['old_option'] + \
                evs[args_4_create['name']].address
@@ -468,7 +455,6 @@ def succ_destroy_e_f(update, context):
     global users, evs
     users[update.message.chat_id].change = 0
     evs.pop(update.message.text)
-    Event.evs_names.remove(update.message.text)
     menu = make_menu(update.message.chat_id)
     m_send(update, context, users[update.message.chat_id].lang['destroy_succ'], menu)
 
@@ -492,24 +478,24 @@ class F_step1(BaseFilter):
 
 class F_step_e(BaseFilter):
     def filter(self, message):
-        for k in languages:
-            if k in message.text:
+        for lang in languages:
+            if lang in message.text:
                 return False
-        for j in (en_texts['main'], en_texts['see_my_e'],
+        for def_butt in (en_texts['main'], en_texts['see_my_e'],
                   en_texts['show_org'], en_texts['button_opt'][0]):
-            if j in message.text:
+            if def_butt in message.text:
                 return False
-        for j in (ru_texts['main'], ru_texts['see_my_e'],
+        for def_butt in (ru_texts['main'], ru_texts['see_my_e'],
                   ru_texts['show_org'], ru_texts['button_opt'][0]):
-            if j in message.text:
+            if def_butt in message.text:
                 return False
-        for i in (en_texts['pass_create'], en_texts['pass_determine'],
+        for passw in (en_texts['pass_create'], en_texts['pass_determine'],
                            en_texts['pass_edit']):
-            if i in message.text.lower():
+            if passw in message.text.lower():
                 return False
-        for i in (ru_texts['pass_create'], ru_texts['pass_determine'],
+        for passw in (ru_texts['pass_create'], ru_texts['pass_determine'],
                            ru_texts['pass_edit']):
-            if i in message.text.lower():
+            if passw in message.text.lower():
                 return False
         if re.match(en_texts['begin']+'|'+ru_texts['begin'], message.text.lower()):
             return False
