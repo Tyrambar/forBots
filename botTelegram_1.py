@@ -135,11 +135,15 @@ args_4_create = {}
 
 
 # Additional funcs-handlers
-def welc_ans(update, context):
-    m_send(update, context, users[update.message.chat_id].lang['welc'])
+def additional_ans(update, context):
+    if users[update.message.chat_id].deep < 10 and users[update.message.chat_id].change == 0:
+        if re.match(users[update.message.chat_id].lang['welcom_re'], update.message.text.lower()):
+            m_send(update, context, users[update.message.chat_id].lang['welc'])
+        elif re.match(users[update.message.chat_id].lang['a_che_tam'], message.text.lower()):
+            m_send(update, context, users[update.message.chat_id].lang['mes_a_che_tam'])
+    else:
+        wrong_ans(update, context)
 
-def how_a_u(update, context):
-    m_send(update, context, users[update.message.chat_id].lang['mes_a_che_tam'])
 
 def wrong_ans(update, context):
     m_send(update, context, users[update.message.chat_id].lang['wrong'])
@@ -497,7 +501,7 @@ class F_step_e(BaseFilter):
                            ru_texts['pass_edit']):
             if passw in message.text.lower():
                 return False
-        if re.match(en_texts['begin']+'|'+ru_texts['begin'], message.text.lower()):
+        if re.match(en_texts['begin']+r'|'+ru_texts['begin'], message.text.lower()):
             return False
         return True
 
@@ -532,16 +536,18 @@ class F_to_see_my_host(BaseFilter):
 
 class F_re_for_start(BaseFilter):
     def filter(self, message):
-        return re.match(en_texts['begin']+'|'+ru_texts['begin'], message.text.lower()) or \
+        return re.match(en_texts['begin']+r'|'+ru_texts['begin'], message.text.lower()) or \
                message.text == en_texts['to_begin'] or message.text == ru_texts['to_begin']
 
-class F_re_for_welcom(BaseFilter):
+class F_re_for_additional_ans(BaseFilter):
     def filter(self, message):
-        return re.match(en_texts['welcom_re']+'|'+ru_texts['welcom_re'], message.text.lower())
+        return re.match(en_texts['welcom_re']+r'|'+ru_texts['welcom_re']+r'|'+ \
+                        en_texts['a_che_tam']+r'|'+ru_texts['a_che_tam'],
+                        message.text.lower())
 
 ff_chosen_lang = F_chosen_lang()
 ff_re_for_start = F_re_for_start()
-ff_re_for_welcom = F_re_for_welcom()
+ff_re_for_additional_ans = F_re_for_additional_ans()
 
 ff_step1 = F_step1()
 ff_step_e = F_step_e()
@@ -559,6 +565,9 @@ st_handler = CommandHandler('start', choose_lang)
 lang_handler = MessageHandler(ff_chosen_lang, has_chosen_lang)
 re_for_start_handler = MessageHandler(ff_re_for_start, start)
 
+additional_ans_handler = MessageHandler(ff_re_for_additional_ans, additional_ans)
+wrong_handler = MessageHandler(Filters.command, wrong_ans)
+
 to_e_handler = MessageHandler(ff_step1, step_1)
 in_e_handler = MessageHandler(ff_step_e, step_work_with_e)
 see_my_e_handler = MessageHandler(ff_see_my_e, see_my_e_f)
@@ -570,17 +579,15 @@ to_to_edit_e_handler = MessageHandler(ff_to_to_edit_e, to_to_edit_e_f)
 
 to_see_my_host_handler = MessageHandler(ff_to_see_my_host, see_my_host)
 
-welc_handler = MessageHandler(ff_re_for_welcom, welc_ans)
-how_a_u_handler = MessageHandler(Filters.regex(en_texts['a_che_tam']+ru_texts['a_che_tam']), how_a_u)
-wrong_handler = MessageHandler(Filters.command, wrong_ans)
+
 
 
 for i in (
         st_handler, lang_handler, re_for_start_handler,
+        wrong_handler, additional_ans_handler,
         to_e_handler, in_e_handler, see_my_e_handler,
         begin_create_e_handler, to_create_e_handler, to_destroy_e_handler,
         to_see_my_host_handler, to_to_edit_e_handler,
-        wrong_handler, welc_handler, how_a_u_handler,
     ):
     dispatcher.add_handler(i)
 
