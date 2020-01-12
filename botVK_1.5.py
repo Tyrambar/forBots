@@ -123,9 +123,9 @@ def get_name_by_id(user):
     return f"@id{user}({info['first_name']} {info['last_name']})"
 
 def functions_with_pass(user, curr):
-    if curr == ru_texts['pass_create']:
+    if curr == ru_texts['pass_add']:
         return begin_create_e_f(user)
-    elif curr == ru_texts['pass_determine']:
+    elif curr == ru_texts['pass_destroy']:
         return destroy_e_f(user)
     elif curr == ru_texts['pass_edit']:
         return to_to_edit_e_f(user)
@@ -454,7 +454,6 @@ token = ''
 vk_session = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(vk_session)
 vk = vk_session.get_api()
-
 
 for event in longpoll.listen():
     #try:
