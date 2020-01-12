@@ -12,6 +12,11 @@ from collections import OrderedDict
 choose_lang_txt = 'Выберите язык / Choose language'
 languages = ['🇷🇺', '🇬🇧']
 lang_pass = '%%% lang'
+# Commands
+pass_add = 'create'
+pass_edit = 'edit'
+pass_destroy = 'delete'
+
 TG_URL = 'https://telegg.ru/orig/bot'
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                      level=logging.INFO)
@@ -285,7 +290,7 @@ def step_work_with_e(update, context):
             u_id in evs[users[u_id].previous].confirmed:
         return step_canc()
     elif 10 <= users[u_id].deep < 20:
-        return creating_e_f(update, context)
+        return create_e_f(update, context)
     elif users[u_id].change == 1 or users[u_id].deep >= 20:
         return edit_e_f(update, context)
     else:
@@ -311,7 +316,7 @@ def see_my_e_f(update, context):
 
 
 # Functions for creating events in bot
-def begin_create_e_f(update, context):
+def to_create_e_f(update, context):
     global users
     users[update.message.chat_id].to_default()
     users[update.message.chat_id].deep = 10
@@ -319,20 +324,18 @@ def begin_create_e_f(update, context):
                      buttons= [users[update.message.chat_id].lang['button_opt'][0]])
     m_send(update, context, users[update.message.chat_id].lang['options'], menu)
 
-def to_create_e_f(update, context):
-    global users
-    menu = make_menu(update.message.chat_id)
-    m_send(update, context, users[update.message.chat_id].lang['options_str'][1], menu)
-
-def creating_e_f(update, context):
+def create_e_f(update, context):
     global users, args_4_create, evs
     curr, u_id = update.message.text, update.message.chat_id
     menu = make_menu(u_id)
 
     if users[u_id].deep == 10:
-        args_4_create['name'] = curr
-        users[u_id].deep = 11
-        m_send(update, context, users[u_id].lang['options_str'][2], menu)
+        if curr == users[u_id].lang['button_opt'][0]:
+            m_send(update, context, users[u_id].lang['options_str'][1], menu)
+        else:
+            args_4_create['name'] = curr
+            users[u_id].deep = 11
+            m_send(update, context, users[u_id].lang['options_str'][2], menu)
     elif users[u_id].deep == 11:
         args_4_create['address'] = curr
         users[u_id].deep = 12
@@ -365,7 +368,7 @@ def creating_e_f(update, context):
 
 
 # Functions for change existing events in bot
-def to_to_edit_e_f(update, context):
+def to_edit_e_f(update, context):
     global users
     users[update.message.chat_id].to_default()
     users[update.message.chat_id].change = 1
@@ -450,7 +453,7 @@ def edit_e_f(update, context):
 
 
 # Functions for delete events in bot
-def destroy_e_f(update, context):
+def to_destroy_e_f(update, context):
     global users
     users[update.message.chat_id].change = -1
     step_1(update, context)
@@ -482,53 +485,11 @@ class F_step1(BaseFilter):
 
 class F_step_e(BaseFilter):
     def filter(self, message):
-        for lang in languages:
-            if lang in message.text:
-                return False
-        for def_butt in (en_texts['main'], en_texts['see_my_e'],
-                  en_texts['show_org'], en_texts['button_opt'][0]):
-            if def_butt in message.text:
-                return False
-        for def_butt in (ru_texts['main'], ru_texts['see_my_e'],
-                  ru_texts['show_org'], ru_texts['button_opt'][0]):
-            if def_butt in message.text:
-                return False
-        for passw in (en_texts['pass_create'], en_texts['pass_determine'],
-                           en_texts['pass_edit']):
-            if passw in message.text.lower():
-                return False
-        for passw in (ru_texts['pass_create'], ru_texts['pass_determine'],
-                           ru_texts['pass_edit']):
-            if passw in message.text.lower():
-                return False
-        if re.match(en_texts['begin']+r'|'+ru_texts['begin'], message.text.lower()):
-            return False
         return True
 
 class F_see_my_e(BaseFilter):
     def filter(self, message):
         return en_texts['see_my_e'] in message.text or ru_texts['see_my_e'] in message.text
-
-class F_to_create_e(BaseFilter):
-    def filter(self, message):
-        return en_texts['button_opt'][0] in message.text or \
-               ru_texts['button_opt'][0] in message.text
-
-
-class F_to_to_create_e(BaseFilter):
-    def filter(self, message):
-        return en_texts['pass_create'] in message.text.lower() or \
-               ru_texts['pass_create'] in message.text.lower()
-
-class F_to_destroy_e(BaseFilter):
-    def filter(self, message):
-        return en_texts['pass_determine'] in message.text.lower() or \
-               ru_texts['pass_determine'] in message.text.lower()
-
-class F_to_to_edit_e(BaseFilter):
-    def filter(self, message):
-        return en_texts['pass_edit'] in message.text.lower() or \
-               ru_texts['pass_edit'] in message.text.lower()
 
 class F_to_see_my_host(BaseFilter):
     def filter(self, message):
@@ -552,12 +513,6 @@ ff_re_for_additional_ans = F_re_for_additional_ans()
 ff_step1 = F_step1()
 ff_step_e = F_step_e()
 ff_see_my_e = F_see_my_e()
-ff_to_to_edit_e = F_to_to_edit_e()
-
-
-ff_to_create_e = F_to_create_e()
-ff_to_to_create_e = F_to_to_create_e()
-ff_to_destroy_e = F_to_destroy_e()
 
 ff_to_see_my_host = F_to_see_my_host()
 
@@ -572,22 +527,18 @@ to_e_handler = MessageHandler(ff_step1, step_1)
 in_e_handler = MessageHandler(ff_step_e, step_work_with_e)
 see_my_e_handler = MessageHandler(ff_see_my_e, see_my_e_f)
 
-begin_create_e_handler = MessageHandler(ff_to_to_create_e, begin_create_e_f)
-to_create_e_handler = MessageHandler(ff_to_create_e, to_create_e_f)
-to_destroy_e_handler = MessageHandler(ff_to_destroy_e, destroy_e_f)
-to_to_edit_e_handler = MessageHandler(ff_to_to_edit_e, to_to_edit_e_f)
+to_create_e_handler = CommandHandler(pass_add, to_create_e_f)
+to_edit_e_handler = CommandHandler(pass_edit, to_edit_e_f)
+to_destroy_e_handler = CommandHandler(pass_destroy, to_destroy_e_f)
 
 to_see_my_host_handler = MessageHandler(ff_to_see_my_host, see_my_host)
 
-
-
-
 for i in (
         st_handler, lang_handler, re_for_start_handler,
+        to_create_e_handler, to_edit_e_handler, to_destroy_e_handler,
         wrong_handler, additional_ans_handler,
-        to_e_handler, in_e_handler, see_my_e_handler,
-        begin_create_e_handler, to_create_e_handler, to_destroy_e_handler,
-        to_see_my_host_handler, to_to_edit_e_handler,
+        to_see_my_host_handler,
+        see_my_e_handler, to_e_handler, in_e_handler,
     ):
     dispatcher.add_handler(i)
 
