@@ -9,17 +9,17 @@ def format_event_repr_f(event, ev_prev, curr_lang):
     return text
 
 def step_conf_txt_f(user_name, event_name):
-	return f'User {user_name} has registered for your event `{event_name}`'
+	return f"User {user_name} has registered for your event '{event_name}'"
 	
 def step_canc_txt_f(user_name, event_name):
-	return f'User {user_name} has canceled his registration for your event `{event_name}`'
+	return f"User {user_name} has canceled his registration for your event '{event_name}'"
 		
 def see_my_e_f_txt_f(number, event_name, address):
 	return f"{number+1}. {event_name} is located at {address}\n"
 
 def see_my_host_txt_f(event_name, nicknames, add = ''):
-	return "On your event`" + event_name + \
-			"`registered:\n" + ('\n'+add).join(nicknames) + '\n'
+	return "On your event '" + event_name + \
+			"' registered:\n" + ('\n'+add).join(nicknames) + '\n'
 	
 	
 options = ('For adding event - fill in step by step:\n'
@@ -28,11 +28,6 @@ options = ('For adding event - fill in step by step:\n'
 '📌Data of event (mm,dd,hh) For example - 5, 25, 18\n'
 '📌Full describe event\n')
 
-pass_create = 'create'
-pass_determine = 'delete'
-pass_edit = 'edit'
-
-passwords = (pass_create, pass_determine, pass_edit)
 all_texts = dict(
 # Default buttons
 step_conf_txt=step_conf_txt_f,
@@ -51,17 +46,17 @@ show_org = 'My visitors',
 show_all = 'All visitors',
 
 # Default messages from bot
-hi_from_bot = ("Welcome! Let’s get to know uncoming events.\n"
+hi_from_bot = ("Welcome! Let’s get to know upcoming events.\n"
                "Sign up! - You always can see your registrations🙂"
                "But if your plans changed - cancel it.\n"
-               "📌Look to icon near smile. "
-               "Click - menu will open.\nKey words: create, edit, delete"),
+               "📌Look to icons near smile. "
+               "Click - menu or list of commands will open."),
 
 choice_e = 'Choose event: write a number or click a button.\n',
 confirm = 'You registered on: ',
 
 wrong = ("😔I can’t understand you. Try again please\n"
-         "📌Open the icon near smile for navigation.\n📌Write “Hello” for starting conversation again"),
+         "📌Open the icon near smile for navigation.\n📌Write “Hi” for starting conversation again"),
 cancel_all = "You canceled",
 
 options = options,
@@ -72,7 +67,7 @@ mes_see = ('You can see you registrations💬.\n'
 choose_edit_e = 'Choose event for editing:\n',
 old_option = '\nOld option:\n',
 options_edit_succ = 'The event successful edited!',
-fail_right_4_edit_e = 'The event successful edited.',
+fail_right_4_edit_e = "You can't edit this event, because it's not your event.",
 
 options_str = options.split('\n'),
 options_fail = 'Wrong data',
@@ -101,12 +96,7 @@ welcom_re = r'(thanks?)|(thank [yo]*u)|(cool)|(thx)',
 months = {1: 'january', 2: 'february', 3: 'march', 4: 'april', 5: 'may', 6: 'june',
           7: 'july', 8: 'august', 9: 'september', 10: 'october',  11: 'november', 12: 'december'},
 daysweek = {'Monday': 'monday', 'Tuesday': 'tuesday', 'Wednesday': 'wednesday',
-'Thursday': 'thursday','Friday': 'friday', 'Saturday': 'saturday', 'Sunday': 'sunday'},
-
-pass_create = pass_create,
-pass_determine = pass_determine,
-pass_edit = pass_edit,
-passwords = passwords)
+'Thursday': 'thursday','Friday': 'friday', 'Saturday': 'saturday', 'Sunday': 'sunday'})
 
 
 
