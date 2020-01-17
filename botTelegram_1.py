@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 
 from collections import OrderedDict
+from typing import NamedTuple
 
 choose_lang_txt = 'Выберите язык / Choose language'
 languages = ['🇷🇺', '🇬🇧']
@@ -51,24 +52,19 @@ class Arg:
         self.see_my_e_lst = []
         self.change = 0
 
-class Event:
+class Event(NamedTuple):
+    name : str
+    address: str
+    date : datetime
+    description : str
+    host_id : int
+    confirmed : list
+    nicknames : list
     confirmed_all = []
     host_all = []
-    def __init__(self, name, addr, date, desc, host_id):
-        self.date = date
-        self.address = addr
-        self.description = desc
-        self.name = name
-        self.host_id = host_id
-        Event.host_all.append(self.host_id)
-        self.confirmed = [] # users chat_id
-        self.nicknames = [] # users nicknames (@somebody)
 
     def __str__(self):
         return self.name
-    def __repr__(self):
-        return self.name + '__class_Event'
-
 		
 # Creating arrays for events
 ex_evs_objs = {}
@@ -80,7 +76,13 @@ def correct_order_ev(evs_arg):
 
 # Adding examples_events into these arrays
 for i in range(len(e)):
-    ex_evs_objs[e[i]] = Event(e[i], e_adress[i], e_dates[e[i]], events_d[e[i]], 203292486)
+    ex_evs_objs[e[i]] = Event(
+        name = e[i],
+        address = e_adress[i],
+        date = e_dates[e[i]],
+        description = events_d[e[i]],
+        host_id = 203292486, confirmed = [], nicknames = [])
+    Event.host_all.append(203292486)
 evs = ex_evs_objs.copy()
 
 
@@ -286,7 +288,7 @@ def step_work_with_e(update, context):
     elif curr == users[u_id].lang['agree'] or \
             re.match(users[u_id].lang['ok'], curr.lower()):
         return step_confirm()
-    elif 'отмен' in curr.lower() and \
+    elif ('отмен' in curr.lower() or 'cancel' in curr.lower()) and \
             u_id in evs[users[u_id].previous].confirmed:
         return step_canc()
     elif 10 <= users[u_id].deep < 20:
@@ -359,9 +361,11 @@ def create_e_f(update, context):
         m_send(update, context, users[u_id].lang['options_almost'], menu)
     elif users[u_id].deep == 14 and \
             curr == users[u_id].lang['button_opt'][1]:
-        new_ev_obj = Event(args_4_create['name'], args_4_create['address'],
-                           args_4_create['date'], args_4_create['description'], u_id)
-        evs[args_4_create['name']] = new_ev_obj
+        evs[args_4_create['name']] = Event(name = args_4_create['name'],
+                    address = args_4_create['address'], date = args_4_create['date'],
+                    description = args_4_create['description'], host_id = u_id,
+                    confirmed = [], nicknames = [])
+        Event.host_all.append(u_id)
         evs = correct_order_ev(evs)
         users[u_id].deep = 0
         m_send(update, context, users[u_id].lang['options_succ'], menu)
@@ -383,6 +387,7 @@ def edit_e_f(update, context):
         users[u_id].deep = 20
         users[u_id].change = 0
         users[u_id].previous = curr
+        args_4_create['prev_name'] = users[u_id].previous
         if evs[curr].host_id == u_id:
             text = users[u_id].lang['options_str'][1] + users[u_id].lang['old_option']+ \
                    users[u_id].previous
@@ -395,9 +400,6 @@ def edit_e_f(update, context):
             args_4_create['name'] = curr
         else:
             args_4_create['name'] = users[u_id].previous
-        obj_ev = evs.pop(users[u_id].previous)
-        obj_ev.name = args_4_create['name']
-        evs[args_4_create['name']] = obj_ev
         users[u_id].deep = 21
         text = users[u_id].lang['options_str'][2] + users[u_id].lang['old_option'] + \
                evs[args_4_create['name']].address
@@ -442,11 +444,12 @@ def edit_e_f(update, context):
         m_send(update, context, users[u_id].lang['options_almost'], menu)
     elif users[u_id].deep == 24 and \
             curr == users[u_id].lang['button_opt_edit'][1]:
-        evs[args_4_create['name']].address = args_4_create['address']
-        if evs[args_4_create['name']].date != args_4_create['date']:
-            evs[args_4_create['name']].date = args_4_create['date']
-            evs[args_4_create['name']].correct_order_ev()
-        evs[args_4_create['name']].description = args_4_create['description']
+        evs.pop(args_4_create['prev_name'])
+        evs[args_4_create['name']] = Event(name=args_4_create['name'],
+                           address=args_4_create['address'], date=args_4_create['date'],
+                           description=args_4_create['description'], host_id=u_id,
+                           confirmed=[], nicknames=[])
+        evs = correct_order_ev(evs)
         users[u_id].to_default()
         menu = make_menu(u_id)
         m_send(update, context, users[u_id].lang['options_edit_succ'], menu)
@@ -461,7 +464,11 @@ def to_destroy_e_f(update, context):
 def succ_destroy_e_f(update, context):
     global users, evs
     users[update.message.chat_id].change = 0
+    for user in evs[update.message.text].confirmed:
+        if user in Event.confirmed_all:
+            Event.confirmed_all.remove(user)
     evs.pop(update.message.text)
+    Event.host_all.remove(update.message.chat_id)
     menu = make_menu(update.message.chat_id)
     m_send(update, context, users[update.message.chat_id].lang['destroy_succ'], menu)
 
