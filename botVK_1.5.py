@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 
 from collections import OrderedDict
+from typing import NamedTuple
 
 url_id = 'https://vk.com/id'
 colors = {}
@@ -45,23 +46,19 @@ class Arg:
         self.see_my_e_lst = []
         self.change = 0
 
-class Event:
+class Event(NamedTuple):
+    name: str
+    address: str
+    date: datetime
+    description: str
+    host_id: int
+    confirmed: list # users id
+    nicknames: list # users names with link
     confirmed_all = []
     host_all = []
-    def __init__(self, name, addr, date, desc, host_id):
-        self.date = date
-        self.address = addr
-        self.description = desc
-        self.name = name
-        self.host_id = host_id
-        Event.host_all.append(self.host_id)
-        self.confirmed = [] # users id
-        self.nicknames = [] # users names with link
 
     def __str__(self):
         return self.name
-    def __repr__(self):
-        return self.name + '__class_Event'
 
 		
 # Helping functions
@@ -122,15 +119,13 @@ def get_name_by_id(user):
     info = vk.users.get(user_ids=user)[0]
     return f"@id{user}({info['first_name']} {info['last_name']})"
 
-def functions_with_pass(user, curr):
-    if curr == ru_texts['pass_add']:
-        return begin_create_e_f(user)
-    elif curr == ru_texts['pass_destroy']:
-        return destroy_e_f(user)
-    elif curr == ru_texts['pass_edit']:
-        return to_to_edit_e_f(user)
-    elif curr == ru_texts['button_opt'][0].lower():
+def functions_with_pass(user, curr_low):
+    if curr_low == ru_texts['pass_add']:
         return to_create_e_f(user)
+    elif curr_low == ru_texts['pass_destroy']:
+        return destroy_e_f(user)
+    elif curr_low == ru_texts['pass_edit']:
+        return to_edit_e_f(user)
 
 		
 def m_send(user, message, keyboard = None):
@@ -248,7 +243,7 @@ def step_work_with_e(user, curr):
             user in evs[users[user].previous].confirmed:
         return step_canc()
     elif 10 <= users[user].deep < 20:
-        return creating_e_f(user, curr)
+        return create_e_f(user, curr)
     elif users[user].change == 1 or users[user].deep >= 20:
         return edit_e_f(user, curr)
     else:
@@ -270,28 +265,26 @@ def see_my_e_f(user):
 
 	
 # Functions for creating events in bot
-def begin_create_e_f(user):
+def to_create_e_f(user):
     global users
     users[user].to_default()
+    users[user].deep = 10
     menu = make_menu(user, [ru_texts['button_opt'][0]])
     m_send(user, ru_texts['options'], menu)
 
-def to_create_e_f(user):
-    global users
-    users[user].deep = 10
-    menu = make_menu(user)
-    m_send(user, ru_texts['options_str'][1], menu)
-
-def creating_e_f(user, curr):
+def create_e_f(user, curr):
     global users, args_4_create, evs
     menu = make_menu(user)
     if users[user].deep == 10:
-        if len(curr) <= 40:
-            args_4_create['name'] = curr
-            users[user].deep = 11
-            m_send(user, ru_texts['options_str'][2], menu)
+        if curr == ru_texts['button_opt'][0]:
+            m_send(user, ru_texts['options_str'][1], menu)
         else:
-            m_send(user, ru_texts['options_fail'])
+            if len(curr) <= 40:
+                args_4_create['name'] = curr
+                users[user].deep = 11
+                m_send(user, ru_texts['options_str'][2], menu)
+            else:
+                m_send(user, ru_texts['options_fail'])
     elif users[user].deep == 11:
         args_4_create['address'] = curr
         users[user].deep = 12
@@ -319,16 +312,18 @@ def creating_e_f(user, curr):
         menu = make_menu(user, [ru_texts['button_opt'][1]])
         m_send(user, ru_texts['options_almost'], menu)
     elif users[user].deep == 14 and curr == ru_texts['button_opt'][1]:
-        new_ev_obj = Event(args_4_create['name'], args_4_create['address'],
-                           args_4_create['date'], args_4_create['description'], user)
-        evs[args_4_create['name']] = new_ev_obj
+        evs[args_4_create['name']] = Event(name = args_4_create['name'],
+                    address = args_4_create['address'], date = args_4_create['date'],
+                    description = args_4_create['description'], host_id = user,
+                    confirmed = [], nicknames = [])
+        Event.host_all.append(user)
         evs = correct_order_ev(evs)
         users[user].deep = 0
         m_send(user, ru_texts['options_succ'], menu)
 
 		
 # Functions for change existing events in bot
-def to_to_edit_e_f(user):
+def to_edit_e_f(user):
     global users
     users[user].to_default()
     users[user].change = 1
@@ -341,6 +336,7 @@ def edit_e_f(user, curr):
         users[user].deep = 20
         users[user].change = 0
         users[user].previous = curr
+        args_4_create['prev_name'] = users[user].previous
         if evs[curr].host_id == user:
             text = ru_texts['options_str'][1]+ru_texts['old_option']+\
                    users[user].previous
@@ -353,9 +349,6 @@ def edit_e_f(user, curr):
             args_4_create['name'] = curr
         else:
             args_4_create['name'] = users[user].previous
-        obj_ev = evs.pop(users[user].previous)
-        obj_ev.name = args_4_create['name']
-        evs[args_4_create['name']] = obj_ev
         users[user].deep = 21
         text = ru_texts['options_str'][2] + ru_texts['old_option'] +\
                evs[args_4_create['name']].address
@@ -399,10 +392,11 @@ def edit_e_f(user, curr):
         menu = make_menu(user, [ru_texts['button_opt_edit'][1]])
         m_send(user, ru_texts['options_almost'], menu)
     elif users[user].deep == 24 and curr == ru_texts['button_opt_edit'][1]:
-        evs[args_4_create['name']].address = args_4_create['address']
-        if evs[args_4_create['name']].date != args_4_create['date']:
-            evs[args_4_create['name']].date = args_4_create['date']
-        evs[args_4_create['name']].description = args_4_create['description']
+        evs.pop(args_4_create['prev_name'])
+        evs[args_4_create['name']] = Event(name = args_4_create['name'],
+                    address = args_4_create['address'], date = args_4_create['date'],
+                    description = args_4_create['description'], host_id = user,
+                    confirmed = [], nicknames = [])
         evs = correct_order_ev(evs)
         users[user].to_default()
         menu = make_menu(user)
@@ -418,8 +412,11 @@ def destroy_e_f(user):
 def succ_destroy_e_f(user, curr):
     global users, evs
     users[user].change = 0
+    for user_conf in evs[curr].confirmed:
+        if user_conf in Event.confirmed_all:
+            Event.confirmed_all.remove(user_conf)
     evs.pop(curr)
-    evs = correct_order_ev(evs)
+    Event.host_all.remove(user)
     menu = make_menu(user)
     m_send(user, ru_texts['destroy_succ'], menu)
 
@@ -440,8 +437,13 @@ def correct_order_ev(evs_arg):
 
 # Adding examples_events into these arrays
 for i in range(len(e)):
-    ex_evs_objs[e[i]] = Event(e[i], e_adress[i],
-                              e_dates[e[i]], events_d[e[i]], 95372442)
+    ex_evs_objs[e[i]] = Event(
+        name=e[i],
+        address=e_adress[i],
+        date=e_dates[e[i]],
+        description=events_d[e[i]],
+        host_id=95372442, confirmed=[], nicknames=[])
+    Event.host_all.append(95372442)
 evs = ex_evs_objs.copy()
 
 # Creating array for every users of bot and array for args for create/edit events
@@ -468,7 +470,7 @@ for event in longpoll.listen():
 
             if re.match(ru_texts['begin'], current.lower()) or current == ru_texts['to_begin']:
                 start(user_id)
-            elif current.lower() in ru_texts['passwords'] or current == ru_texts['button_opt'][0]:
+            elif current.lower() in ru_texts['passwords']:
                 functions_with_pass(user_id, current.lower())
             elif current == ru_texts['see_my_e']:
                 see_my_e_f(user_id)
