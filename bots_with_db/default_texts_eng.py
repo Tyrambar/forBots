@@ -59,8 +59,8 @@ hi_from_bot=("Welcome! Let’s get to know upcoming events.\n"
              "But if your plans changed - cancel it.\n"
              "📌Look to icons near smile. "
              "Click - menu or list of commands will open.\n"
-			 "You can synchronize yourself with Telegram/VK:" 
-			 "type `get` for getting password and then `sync`, "
+             "You can synchronize yourself with Telegram/VK:" 
+             "type `get` for getting password and then `sync`, "
              "space and password"),
 
 choice_e='Choose event: write a number or click a button.\n',
