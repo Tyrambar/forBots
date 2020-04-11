@@ -1,7 +1,7 @@
-
 DEFAULT_ATTRS_EVENT = ['name', 'address', 'date', 'description', 'host_id']
 DEFAULT_ATTRS_EVENT_VK = DEFAULT_ATTRS_EVENT + ['vk_host_id']
 DEFAULT_ATTRS_EVENT_TG = DEFAULT_ATTRS_EVENT + ['tg_host_id']
+
 
 # First queries for creating tables
 create_users = """
@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   passw CHAR(10) NOT NULL
 )
 """
+
 create_events = """
 CREATE TABLE IF NOT EXISTS events (
   id SERIAL PRIMARY KEY,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS events (
   host_id INTEGER REFERENCES users(id)
 )
 """
+
 create_signs = """
 CREATE TABLE IF NOT EXISTS signs (
   id SERIAL PRIMARY KEY,
@@ -36,8 +38,10 @@ ADD_EVENT = """INSERT INTO events (name, address, date, description, host_id)
 DEL_EVENT = """DELETE FROM events WHERE name = %s"""
 EDIT_EVENT = f"""UPDATE events SET {' = %s, '.join(DEFAULT_ATTRS_EVENT)} = %s
                         WHERE name = %s """
-GET_EVENT_ALL = f"""SELECT {', '.join(DEFAULT_ATTRS_EVENT[:-1])}, us.vk_id, us.tg_id FROM events ev
-                    INNER JOIN users us ON ev.host_id = us.id WHERE ev.name = %s """
+GET_EVENT_ALL = f"""SELECT {', '.join(DEFAULT_ATTRS_EVENT[:-1])}, 
+                    us.vk_id, us.tg_id FROM events ev
+                    INNER JOIN users us ON ev.host_id = us.id 
+                    WHERE ev.name = %s """
 GET_ID_EVENT_BY_NAME = """SELECT id FROM events WHERE name = %s"""
 GET_HOST_ID_ALL = """SELECT us.vk_id, us.tg_id FROM users us
                         INNER JOIN events ev ON us.id = ev.host_id 
@@ -65,11 +69,10 @@ GET_PASSW_BY_TG = """SELECT passw FROM users WHERE tg_id = %s """
 ALL_SIGNED_ID = """SELECT user_id FROM signs"""
 ALL_SIGNED_ID_BY_EV_ALL = """SELECT us.vk_id, us.tg_id FROM users us 
                             INNER JOIN signs si ON us.id = si.user_id 
-                                INNER JOIN events ev ON si.event_id = ev.id 
-                                    WHERE us.id = si.user_id AND ev.name = %s"""
+                            INNER JOIN events ev ON si.event_id = ev.id 
+                                WHERE us.id = si.user_id AND ev.name = %s"""
 GET_SIGNS_BY_ID = """SELECT si.user_id FROM signs si
-            INNER JOIN events ev ON si.event_id = ev.id WHERE si.user_id = %s AND ev.name = %s"""
+            INNER JOIN events ev ON si.event_id = ev.id 
+			    WHERE si.user_id = %s AND ev.name = %s"""
 ADD_SIGNS = """INSERT INTO signs (user_id, event_id) VALUES (%s, %s)"""
 DEL_SIGNS = """DELETE FROM signs WHERE user_id = %s and event_id = %s"""
-
-
